@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LangGraph Developer Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        surface: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1' },
+                        ink: { 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
+                    },
+                    keyframes: {
+                        'pulse-ring': { '0%': { transform: 'scale(0.8)', opacity: '1' }, '100%': { transform: 'scale(2.2)', opacity: '0' } },
+                        'stream-dot': { '0%,80%,100%': { opacity: '0.2' }, '40%': { opacity: '1' } },
+                        'fade-up': { from: { opacity: '0', transform: 'translateY(12px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+                        'node-glow': { '0%,100%': { boxShadow: '0 0 0 0 rgba(59,130,246,0.4)' }, '50%': { boxShadow: '0 0 0 8px rgba(59,130,246,0)' } },
+                    },
+                    animation: {
+                        'pulse-ring': 'pulse-ring 1.2s cubic-bezier(0.4,0,0.6,1) infinite',
+                        'stream-dot': 'stream-dot 1.4s ease-in-out infinite',
+                        'fade-up': 'fade-up 0.35s ease both',
+                        'node-glow': 'node-glow 2s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .stream-dot:nth-child(2) { animation-delay: 0.2s; }
+        .stream-dot:nth-child(3) { animation-delay: 0.4s; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        pre code { font-size: 12px; }
+    </style>
+</head>
+<body class="bg-surface-50 text-ink-800 font-sans h-screen overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect, useCallback } = React;
+
+        /* ── Graph Node Definitions ──────────────────────────── */
+        const GRAPH_NODES = [
+            { id: 'input', label: 'Input Parser', icon: '📥', meta: { type: 'parser', schema: 'HumanMessage → State' } },
+            { id: 'llm', label: 'LLM Chatbot', icon: '🧠', meta: { type: 'llm', model: 'llama-3.3-70b-versatile', provider: 'groq', tools_bound: ['get_current_time', 'calculate', 'search_knowledge'] } },
+            { id: 'router', label: 'Router', icon: '🔀', meta: { type: 'tools_condition', routes: ['tools → llm (loop)', 'END'] } },
+            { id: 'tool', label: 'Tool Executor', icon: '🔧', meta: { type: 'ToolNode', tools: ['get_current_time', 'calculate', 'search_knowledge'] } },
+            { id: 'output', label: 'Output', icon: '📤', meta: { type: 'output', schema: 'State → AIMessage' } },
+        ];
+
+        /* ── Node Status Badge ───────────────────────────────── */
+        function NodeBadge({ status }) {
+            const styles = {
+                idle: 'bg-slate-200 text-slate-500',
+                running: 'bg-blue-100 text-blue-600',
+                success: 'bg-emerald-100 text-emerald-700',
+                failed: 'bg-red-100 text-red-600',
+            };
+            return (
+                <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${styles[status]}`}>
+                    {status}
+                </span>
+            );
+        }
+
+        /* ── Single Graph Node ───────────────────────────────── */
+        function GraphNode({ node, status, isSelected, onSelect, duration }) {
+            const borderColor = {
+                idle: 'border-slate-200',
+                running: 'border-blue-400 animate-node-glow',
+                success: 'border-emerald-400',
+                failed: 'border-red-400',
+            }[status];
+
+            const bgColor = {
+                idle: 'bg-white',
+                running: 'bg-blue-50',
+                success: 'bg-emerald-50',
+                failed: 'bg-red-50',
+            }[status];
+
+            return (
+                <div className="flex flex-col items-center min-w-0 flex-1">
+                    <button
+                        onClick={() => onSelect(node.id)}
+                        className={`relative w-full max-w-[160px] px-4 py-3 rounded-xl border-2 ${borderColor} ${bgColor} transition-all duration-300 hover:shadow-md cursor-pointer group`}
+                    >
+                        {status === 'running' && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-blue-400"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                            </span>
+                        )}
+                        <div className="text-xl mb-1">{node.icon}</div>
+                        <div className="text-xs font-semibold text-ink-800 truncate">{node.label}</div>
+                        <div className="mt-1.5"><NodeBadge status={status} /></div>
+                        {duration != null && status === 'success' && (
+                            <div className="text-[10px] text-slate-400 mt-1 font-mono">{duration}ms</div>
+                        )}
+                    </button>
+                </div>
+            );
+        }
+
+        /* ── Arrow Connector ─────────────────────────────────── */
+        function Arrow({ active }) {
+            return (
+                <div className="flex items-center px-1 flex-shrink-0">
+                    <div className={`w-6 h-0.5 ${active ? 'bg-blue-400' : 'bg-slate-200'} transition-colors duration-500`}></div>
+                    <div className={`w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] ${active ? 'border-l-blue-400' : 'border-l-slate-200'} transition-colors duration-500`}></div>
+                </div>
+            );
+        }
+
+        /* ── Metadata Panel ──────────────────────────────────── */
+        function MetadataPanel({ node, status }) {
+            return (
+                <div className="animate-fade-up bg-ink-900 rounded-lg p-4 mt-3 text-xs font-mono text-slate-300 max-h-48 overflow-auto scrollbar-thin">
+                    <div className="text-slate-500 mb-2">// {node.label} — execution metadata</div>
+                    <pre className="whitespace-pre-wrap"><code>{JSON.stringify({
+                        nodeId: node.id,
+                        status,
+                        config: node.meta,
+                        timestamp: new Date().toISOString(),
+                        stateSnapshot: {
+                            messagesCount: Math.floor(Math.random() * 10) + 1,
+                            lastModified: node.id,
+                        }
+                    }, null, 2)}</code></pre>
+                </div>
+            );
+        }
+
+        /* ── Graph Execution Trace ───────────────────────────── */
+        function GraphTrace({ nodeStates, durations, selectedNode, setSelectedNode }) {
+            return (
+                <div className="border-b border-slate-200 bg-white">
+                    <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                            <h2 className="text-sm font-bold text-ink-800 tracking-tight">Graph Execution Trace</h2>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">StateGraph → llmchatbot</span>
+                    </div>
+                    <div className="px-6 py-5 overflow-x-auto scrollbar-thin">
+                        <div className="flex items-center justify-center gap-0 min-w-max">
+                            {GRAPH_NODES.map((node, i) => (
+                                <React.Fragment key={node.id}>
+                                    <GraphNode
+                                        node={node}
+                                        status={nodeStates[node.id] || 'idle'}
+                                        isSelected={selectedNode === node.id}
+                                        onSelect={setSelectedNode}
+                                        duration={durations[node.id]}
+                                    />
+                                    {i < GRAPH_NODES.length - 1 && (
+                                        <Arrow active={nodeStates[GRAPH_NODES[i + 1]?.id] !== 'idle'} />
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                        {selectedNode && (
+                            <div className="max-w-2xl mx-auto">
+                                <MetadataPanel
+                                    node={GRAPH_NODES.find(n => n.id === selectedNode)}
+                                    status={nodeStates[selectedNode]}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        /* ── Chat Bubble: Human ──────────────────────────────── */
+        function HumanBubble({ text, time }) {
+            return (
+                <div className="flex justify-end animate-fade-up">
+                    <div className="max-w-[70%]">
+                        <div className="bg-ink-800 text-white px-4 py-3 rounded-2xl rounded-br-sm text-sm leading-relaxed">{text}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 text-right pr-1">{time}</div>
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center ml-2.5 flex-shrink-0 mt-0.5">
+                        <svg className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                </div>
+            );
+        }
+
+        /* ── Simple Markdown Renderer ────────────────────────── */
+        function renderMarkdown(text) {
+            let html = text;
+            html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="bg-ink-900 text-slate-300 rounded-lg p-3 my-2 overflow-x-auto font-mono text-xs"><code>$2</code></pre>');
+            html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-200 text-ink-800 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>');
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            html = html.replace(/^\s*[-*]\s+(.+)/gm, '<li class="ml-4 list-disc">$1</li>');
+            html = html.replace(/\n\n/g, '<br/><br/>');
+            html = html.replace(/\n/g, '<br/>');
+            return html;
+        }
+
+        /* ── Chat Bubble: AI ─────────────────────────────────── */
+        function AIBubble({ text, time, isStreaming }) {
+            return (
+                <div className="flex animate-fade-up">
+                    <div className="w-8 h-8 rounded-lg bg-ink-800 flex items-center justify-center mr-2.5 flex-shrink-0 mt-0.5">
+                        <span className="text-sm">🤖</span>
+                    </div>
+                    <div className="max-w-[75%]">
+                        <div className="bg-slate-100 border border-slate-200 px-4 py-3 rounded-2xl rounded-bl-sm text-sm leading-relaxed text-ink-800">
+                            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />
+                            {isStreaming && (
+                                <span className="inline-flex gap-1 ml-1 align-middle">
+                                    <span className="stream-dot w-1.5 h-1.5 bg-blue-500 rounded-full animate-stream-dot"></span>
+                                    <span className="stream-dot w-1.5 h-1.5 bg-blue-500 rounded-full animate-stream-dot"></span>
+                                    <span className="stream-dot w-1.5 h-1.5 bg-blue-500 rounded-full animate-stream-dot"></span>
+                                </span>
+                            )}
+                        </div>
+                        {!isStreaming && (
+                            <div className="flex items-center gap-2 mt-1 pl-1">
+                                <span className="text-[10px] text-slate-400">{time}</span>
+                                <span className="text-[10px] font-mono text-slate-300 bg-slate-100 px-1.5 py-0.5 rounded">LangGraph ↗</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        /* ── Chat Bubble: Tool Call ───────────────────────────── */
+        function ToolBubble({ toolName, args, result, time }) {
+            const [open, setOpen] = useState(false);
+            return (
+                <div className="flex animate-fade-up">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mr-2.5 flex-shrink-0 mt-0.5">
+                        <span className="text-sm">🔧</span>
+                    </div>
+                    <div className="max-w-[75%] w-full">
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
+                                <span>Tool Call</span>
+                                <span className="font-mono bg-amber-100 px-1.5 py-0.5 rounded text-amber-700">{toolName}</span>
+                            </div>
+                            <div className="mt-1.5 text-xs text-amber-700 font-mono bg-amber-100/60 rounded px-2 py-1.5">
+                                args: {JSON.stringify(args)}
+                            </div>
+                            <button
+                                onClick={() => setOpen(!open)}
+                                className="mt-2 text-[11px] font-medium text-amber-600 hover:text-amber-800 flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                                <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                                {open ? 'Hide' : 'Show'} response
+                            </button>
+                            {open && (
+                                <pre className="mt-2 bg-ink-900 text-slate-300 rounded-lg p-3 text-xs font-mono overflow-x-auto animate-fade-up">
+                                    <code>{JSON.stringify(result, null, 2)}</code>
+                                </pre>
+                            )}
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-1 pl-1">{time}</div>
+                    </div>
+                </div>
+            );
+        }
+
+        /* ── Status Bar ──────────────────────────────────────── */
+        function StatusBar({ ttft, tpot, isGenerating }) {
+            return (
+                <div className="flex items-center gap-4 px-4 py-1.5 bg-slate-100 border-t border-slate-200 text-[10px] font-mono text-slate-400">
+                    <div className="flex items-center gap-1.5">
+                        <div className={`w-1.5 h-1.5 rounded-full ${isGenerating ? 'bg-blue-500 animate-pulse' : 'bg-emerald-400'}`}></div>
+                        <span>{isGenerating ? 'Generating...' : 'Ready'}</span>
+                    </div>
+                    <span>TTFT: <span className="text-slate-600">{ttft ?? '--'}ms</span></span>
+                    <span>TPOT: <span className="text-slate-600">{tpot ?? '--'}ms</span></span>
+                    <span className="ml-auto text-slate-300">LangGraph v1 · Groq</span>
+                </div>
+            );
+        }
+
+        /* ── Main App ────────────────────────────────────────── */
+        function App() {
+            const [messages, setMessages] = useState([]);
+            const [input, setInput] = useState('');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [nodeStates, setNodeStates] = useState({});
+            const [durations, setDurations] = useState({});
+            const [selectedNode, setSelectedNode] = useState(null);
+            const [ttft, setTtft] = useState(null);
+            const [tpot, setTpot] = useState(null);
+            const chatRef = useRef(null);
+
+            const scrollBottom = useCallback(() => {
+                if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+            }, []);
+
+            useEffect(scrollBottom, [messages, isGenerating]);
+
+            const getTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            /* Animate a single node: running → success */
+            const animateNode = (id, dur) => {
+                return new Promise(resolve => {
+                    setNodeStates(prev => ({ ...prev, [id]: 'running' }));
+                    setTimeout(() => {
+                        setNodeStates(prev => ({ ...prev, [id]: 'success' }));
+                        setDurations(prev => ({ ...prev, [id]: dur }));
+                        resolve();
+                    }, Math.min(dur, 300) + 80);
+                });
+            };
+
+            const sendMessage = async () => {
+                const text = input.trim();
+                if (!text || isGenerating) return;
+
+                setInput('');
+                const time = getTime();
+                setMessages(prev => [...prev, { type: 'human', text, time }]);
+                setIsGenerating(true);
+                setTtft(null);
+                setTpot(null);
+
+                // Reset all nodes
+                const resetStates = {};
+                GRAPH_NODES.forEach(n => resetStates[n.id] = 'idle');
+                setNodeStates(resetStates);
+                setDurations({});
+
+                const t0 = Date.now();
+
+                // Step 1: Input Parser
+                await animateNode('input', Math.round(Math.random() * 50 + 30));
+
+                // Step 2: LLM starts running
+                setNodeStates(prev => ({ ...prev, llm: 'running' }));
+
+                // Step 3: Call the API
+                const streamId = Date.now();
+                setMessages(prev => [...prev, { type: 'ai', text: '', time: '', id: streamId, streaming: true }]);
+
+                try {
+                    const res = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: text }),
+                    });
+
+                    const firstByte = Date.now() - t0;
+                    setTtft(firstByte);
+
+                    const data = await res.json();
+                    const totalTime = Date.now() - t0;
+                    setTpot(Math.round(totalTime / Math.max(data.reply?.length || 1, 1) * 100));
+
+                    // Mark LLM as success
+                    setNodeStates(prev => ({ ...prev, llm: 'success' }));
+                    setDurations(prev => ({ ...prev, llm: totalTime }));
+
+                    // Step 4: If tool calls happened, animate Router + Tool Executor and show ToolBubbles
+                    const toolCalls = data.tool_calls || [];
+                    if (toolCalls.length > 0) {
+                        // Router routed to tools
+                        await animateNode('router', Math.round(Math.random() * 30 + 15));
+
+                        // Tool Executor
+                        setNodeStates(prev => ({ ...prev, tool: 'running' }));
+                        for (const tc of toolCalls) {
+                            await new Promise(r => setTimeout(r, 200));
+                            setMessages(prev => [
+                                ...prev.filter(m => m.id !== streamId),  // temporarily remove streaming AI bubble
+                                { type: 'tool', toolName: tc.tool_name, args: tc.arguments, result: tc.result || 'No result', time: getTime() },
+                                ...prev.filter(m => m.id === streamId),  // re-add streaming bubble after tool
+                            ]);
+                        }
+                        await animateNode('tool', Math.round(Math.random() * 100 + 50));
+                    } else {
+                        // Router went straight to END (no tools needed)
+                        await animateNode('router', Math.round(Math.random() * 20 + 10));
+                    }
+
+                    // Step 5: Output node
+                    await animateNode('output', Math.round(Math.random() * 20 + 5));
+
+                    // Step 6: Stream the AI reply text
+                    const fullText = data.reply || 'No response received.';
+                    const words = fullText.split(' ');
+                    let revealed = '';
+
+                    for (let w = 0; w < words.length; w++) {
+                        revealed += (w > 0 ? ' ' : '') + words[w];
+                        const current = revealed;
+                        await new Promise(r => setTimeout(r, 20));
+                        setMessages(prev => prev.map(m =>
+                            m.id === streamId ? { ...m, text: current } : m
+                        ));
+                    }
+
+                    // Finalize
+                    setMessages(prev => prev.map(m =>
+                        m.id === streamId ? { ...m, streaming: false, time: getTime() } : m
+                    ));
+
+                } catch (err) {
+                    setMessages(prev => prev.map(m =>
+                        m.id === streamId ? { ...m, text: '⚠️ Error connecting to server.', streaming: false, time: getTime() } : m
+                    ));
+                    setNodeStates(prev => ({ ...prev, llm: 'failed' }));
+                }
+
+                setIsGenerating(false);
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            };
+
+            return (
+                <div className="h-screen flex flex-col bg-surface-50">
+                    {/* ── Header ──────────────────────── */}
+                    <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200 flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-ink-800 flex items-center justify-center">
+                                <span className="text-white text-sm font-bold">⚡</span>
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-ink-900 tracking-tight">LangGraph Playground</h1>
+                                <p className="text-[10px] text-slate-400">Developer Console · by Dhruv</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">● Connected</span>
+                            <a href="/" className="text-xs text-slate-400 hover:text-slate-600 transition-colors ml-2">← Back to Chat</a>
+                        </div>
+                    </header>
+
+                    {/* ── Graph Trace ─────────────────── */}
+                    <GraphTrace
+                        nodeStates={nodeStates}
+                        durations={durations}
+                        selectedNode={selectedNode}
+                        setSelectedNode={(id) => setSelectedNode(selectedNode === id ? null : id)}
+                    />
+
+                    {/* ── Chat Messages ────────────────── */}
+                    <div ref={chatRef} className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5 space-y-5">
+                        {messages.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-full text-center animate-fade-up">
+                                <div className="w-14 h-14 rounded-2xl bg-ink-800 flex items-center justify-center mb-4">
+                                    <span className="text-2xl">⚡</span>
+                                </div>
+                                <h3 className="text-lg font-bold text-ink-800">Developer Playground</h3>
+                                <p className="text-sm text-slate-400 max-w-md mt-1">Send a message to watch the graph nodes execute in real-time. Try tool-triggering prompts!</p>
+                                <div className="flex flex-wrap gap-2 mt-5 justify-center">
+                                    {['What time is it right now?', 'Calculate 2**10 + sqrt(144)', 'Tell me about LangGraph'].map(s => (
+                                        <button
+                                            key={s}
+                                            onClick={() => { setInput(s); }}
+                                            className="px-3.5 py-2 bg-white border border-slate-200 rounded-full text-xs text-slate-500 hover:border-blue-300 hover:text-blue-600 transition-all cursor-pointer"
+                                        >{s}</button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {messages.map((msg, i) => {
+                            if (msg.type === 'human') return <HumanBubble key={i} text={msg.text} time={msg.time} />;
+                            if (msg.type === 'ai') return <AIBubble key={msg.id || i} text={msg.text} time={msg.time} isStreaming={msg.streaming} />;
+                            if (msg.type === 'tool') return <ToolBubble key={i} toolName={msg.toolName} args={msg.args} result={msg.result} time={msg.time} />;
+                            return null;
+                        })}
+                    </div>
+
+                    {/* ── Input Area ───────────────────── */}
+                    <div className="flex-shrink-0 bg-white border-t border-slate-200 px-6 py-4">
+                        <div className="flex items-center gap-3 bg-surface-100 border border-slate-200 rounded-2xl px-4 py-1.5 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                            <button className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0 cursor-pointer" title="Attach file">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            </button>
+                            <input
+                                type="text"
+                                className="flex-1 bg-transparent outline-none text-sm text-ink-800 placeholder:text-slate-400 py-2 font-sans"
+                                placeholder="Type a message..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                disabled={isGenerating}
+                                autoFocus
+                            />
+                            <button
+                                onClick={sendMessage}
+                                disabled={isGenerating || !input.trim()}
+                                className="w-9 h-9 rounded-xl bg-ink-800 text-white flex items-center justify-center hover:bg-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0 cursor-pointer"
+                            >
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Status Bar ───────────────────── */}
+                    <StatusBar ttft={ttft} tpot={tpot} isGenerating={isGenerating} />
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

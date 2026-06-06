@@ -1,0 +1,27 @@
+# Environment variables
+.env
+.env.local
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python caching and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# IDE settings
+.vscode/
+.idea/
+.DS_Store
