@@ -52,7 +52,7 @@
         /* ── Graph Node Definitions ──────────────────────────── */
         const GRAPH_NODES = [
             { id: 'input', label: 'Input Parser', icon: '📥', meta: { type: 'parser', schema: 'HumanMessage → State' } },
-            { id: 'llm', label: 'LLM Chatbot', icon: '🧠', meta: { type: 'llm', model: 'llama-3.3-70b-versatile', provider: 'groq', tools_bound: ['get_current_time', 'calculate', 'search_knowledge'] } },
+            { id: 'llm', label: 'LLM Chatbot', icon: '🧠', meta: { type: 'llm', model: 'openai/gpt-oss-120b:free', provider: 'openrouter', tools_bound: ['get_current_time', 'calculate', 'search_knowledge'] } },
             { id: 'router', label: 'Router', icon: '🔀', meta: { type: 'tools_condition', routes: ['tools → llm (loop)', 'END'] } },
             { id: 'tool', label: 'Tool Executor', icon: '🔧', meta: { type: 'ToolNode', tools: ['get_current_time', 'calculate', 'search_knowledge'] } },
             { id: 'output', label: 'Output', icon: '📤', meta: { type: 'output', schema: 'State → AIMessage' } },
@@ -285,7 +285,7 @@
                     </div>
                     <span>TTFT: <span className="text-slate-600">{ttft ?? '--'}ms</span></span>
                     <span>TPOT: <span className="text-slate-600">{tpot ?? '--'}ms</span></span>
-                    <span className="ml-auto text-slate-300">LangGraph v1 · Groq</span>
+                    <span className="ml-auto text-slate-300">LangGraph v1 · OpenRouter</span>
                 </div>
             );
         }
