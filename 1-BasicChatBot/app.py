@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing_extensions import TypedDict
 
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain_core.messages import ToolMessage, AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
@@ -19,7 +19,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_tavily import TavilySearch
 
 load_dotenv()
-os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY", "")
 
 
@@ -87,7 +87,10 @@ SYSTEM_PROMPT = (
     "For general conversation or simple greetings, answer directly without tools."
 )
 
-llm = ChatGroq(model="llama-3.3-70b-versatile")
+llm = ChatOpenAI(
+    model="openai/gpt-oss-120b:free",
+    openai_api_base=os.getenv("OPENAI_API_BASE", "https://openrouter.ai/api/v1"),
+)
 llm_with_tools = llm.bind_tools(tools)
 
 
@@ -124,6 +127,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for HF Spaces."""
+    return {"status": "ok"}
 
 
 @app.get("/", response_class=HTMLResponse)
