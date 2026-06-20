@@ -1,10 +1,10 @@
 # 🤖 AgenticAI — LangGraph Chatbot
 
-A full-stack AI chatbot built with **LangGraph**, **Groq (LLaMA 3.3 70B)**, and **FastAPI** — featuring tool-calling agents, a premium chat UI, and a real-time developer playground for visualizing graph execution.
+A full-stack AI chatbot built with **LangGraph**, **OpenRouter (GPT-OSS 120B)**, and **FastAPI** — featuring tool-calling agents, a premium chat UI, and a real-time developer playground for visualizing graph execution.
 
 ![Python](https://img.shields.io/badge/Python-3.14-blue?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Stateful_Agents-orange?logo=langchain&logoColor=white)
-![Groq](https://img.shields.io/badge/Groq-LLaMA_3.3_70B-green?logo=meta&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/OpenRouter-GPT--OSS_120B-blue?logo=openai&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
 
 ---
@@ -16,7 +16,8 @@ A full-stack AI chatbot built with **LangGraph**, **Groq (LLaMA 3.3 70B)**, and 
 - **💬 Premium Chat UI** — Clean 3-column layout with sidebar navigation, live feed panel, markdown rendering, and responsive design
 - **⚡ Developer Playground** — Real-time graph execution trace with node-level animations (idle → running → success/failed), expandable metadata panels, streaming token simulation, and TTFT/TPOT latency metrics
 - **🔄 Tool Call Visualization** — Amber inline cards showing tool name, arguments, and collapsible JSON responses in the chat flow
-- **🚀 Groq-Powered** — Blazing-fast inference via Groq's LPU with LLaMA 3.3 70B Versatile
+- **🌊 Real-time Streaming** — Server-Sent Events (SSE) provide a progressive typewriter effect as the model generates text
+- **🚀 OpenRouter-Powered** — Inference provided by OpenRouter's flexible API using GPT-OSS 120B
 
 ---
 
@@ -54,7 +55,7 @@ AgenticAI_Langraph/
 ├── 1-BasicChatBot/
 │   ├── app.py                    # FastAPI backend + LangGraph agent
 │   ├── basicchatbot.ipynb        # Jupyter notebook (learning/exploration)
-│   ├── .env                      # GROQ_API_KEY (not committed)
+│   ├── .env                      # OPENROUTER_API_KEY (not committed)
 │   └── templates/
 │       ├── index.html            # Premium Chat UI
 │       └── playground.html       # Developer Playground (React + Tailwind)
@@ -82,10 +83,10 @@ pip install -r requirements.txt
 Create `1-BasicChatBot/.env`:
 
 ```env
-GROQ_API_KEY=your_groq_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
-Get a free API key at [console.groq.com](https://console.groq.com)
+Get an API key at [openrouter.ai](https://openrouter.ai/)
 
 ### 3. Run
 
@@ -118,7 +119,7 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8000 --reload
 
 | Layer | Technology |
 |-------|-----------|
-| **LLM** | Groq — LLaMA 3.3 70B Versatile |
+| **LLM** | OpenRouter — GPT-OSS 120B |
 | **Agent Framework** | LangGraph (StateGraph + ToolNode) |
 | **Backend** | FastAPI + Uvicorn |
 | **Frontend (Chat)** | Vanilla HTML/CSS/JS (Inter font, responsive 3-column layout) |
