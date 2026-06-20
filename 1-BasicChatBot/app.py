@@ -1,5 +1,3 @@
-
-
 import os
 import datetime
 import math
@@ -18,9 +16,11 @@ from langchain_core.messages import ToolMessage, AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_tavily import TavilySearch
 
 load_dotenv()
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
+os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY", "")
 
 
 @tool
@@ -66,7 +66,26 @@ def search_knowledge(query: str) -> str:
     return f"No specific entry found for '{query}'. The LLM will use its general knowledge to answer."
 
 
-tools = [get_current_time, calculate, search_knowledge]
+# Tavily web search for real-time information
+web_search = TavilySearch(
+    max_results=3,
+    topic="general",
+    search_depth="basic",
+)
+
+tools = [get_current_time, calculate, search_knowledge, web_search]
+
+SYSTEM_PROMPT = (
+    "You are a helpful AI assistant. You have access to the following tools:\n"
+    "- get_current_time: Returns the current date and time.\n"
+    "- calculate: Evaluates a mathematical expression (e.g. '2+2', 'sqrt(144)').\n"
+    "- search_knowledge: Searches a small knowledge base for factual topics.\n"
+    "- tavily_search: Searches the web for real-time, up-to-date information.\n\n"
+    "IMPORTANT: For questions about current events, news, prices, weather, sports scores, "
+    "or anything that requires up-to-date information, you MUST use the tavily_search tool. "
+    "Do NOT rely on your training data for current facts.\n"
+    "For general conversation or simple greetings, answer directly without tools."
+)
 
 llm = ChatGroq(model="llama-3.3-70b-versatile")
 llm_with_tools = llm.bind_tools(tools)
@@ -142,9 +161,27 @@ async def chat_endpoint(request: Request):
                 content={"error": "Message cannot be empty."},
             )
 
-        result = graph.invoke({"messages": user_message})
+        # Build messages with system prompt + user message
+        input_messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            HumanMessage(content=user_message),
+        ]
 
         tool_calls_trace = []
+        used_fallback = False
+
+        # Try the tool-calling graph first
+        try:
+            result = graph.invoke({"messages": input_messages})
+        except Exception as graph_err:
+            err_str = str(graph_err)
+            if "tool_use_failed" in err_str or "tool_call" in err_str.lower():
+                # Fallback: invoke the LLM without tools
+                fallback_response = llm.invoke(input_messages)
+                result = {"messages": input_messages + [fallback_response]}
+                used_fallback = True
+            else:
+                raise
 
         for msg in result["messages"]:
             if isinstance(msg, AIMessage) and msg.tool_calls:
@@ -175,4 +212,5 @@ async def chat_endpoint(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.getenv("PORT", "7860"))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)
