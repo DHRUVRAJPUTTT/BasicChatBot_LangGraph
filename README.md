@@ -110,6 +110,7 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8000 --reload
 | `get_current_time` | Returns current date & time | "What time is it?" |
 | `calculate` | Evaluates math expressions (sqrt, sin, log, etc.) | "Calculate 2**10 + sqrt(144)" |
 | `search_knowledge` | Queries a knowledge base | "Tell me about mitochondria" |
+| `Tavily_Websearch` | Tells Realtime World Information | "Ask it any RealWolrd Live Query" |
 
 ---
 
