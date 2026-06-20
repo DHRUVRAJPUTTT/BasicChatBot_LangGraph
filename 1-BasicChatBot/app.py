@@ -5,7 +5,8 @@ from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+import json
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing_extensions import TypedDict
@@ -176,40 +177,40 @@ async def chat_endpoint(request: Request):
             HumanMessage(content=user_message),
         ]
 
-        tool_calls_trace = []
-        used_fallback = False
+        async def event_generator():
+            try:
+                async for event in graph.astream_events({"messages": input_messages}, version="v2"):
+                    kind = event["event"]
+                    if kind == "on_chat_model_stream":
+                        chunk = event["data"]["chunk"]
+                        if chunk.content and isinstance(chunk.content, str):
+                            yield f"data: {json.dumps({'type': 'message_chunk', 'content': chunk.content})}\n\n"
+                    elif kind == "on_tool_start":
+                        yield f"data: {json.dumps({'type': 'tool_call', 'tool_name': event['name'], 'arguments': event['data'].get('input')})}\n\n"
+                    elif kind == "on_tool_end":
+                        out = event['data'].get('output')
+                        if hasattr(out, "content"):
+                            out = out.content
+                        yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': event['name'], 'result': out})}\n\n"
+                
+                yield "data: [DONE]\n\n"
+            except Exception as graph_err:
+                err_str = str(graph_err)
+                if "tool_use_failed" in err_str or "tool_call" in err_str.lower():
+                    # Fallback stream
+                    try:
+                        async for chunk in llm.astream(input_messages):
+                            if chunk.content and isinstance(chunk.content, str):
+                                yield f"data: {json.dumps({'type': 'message_chunk', 'content': chunk.content})}\n\n"
+                        yield "data: [DONE]\n\n"
+                    except Exception as fallback_err:
+                        yield f"data: {json.dumps({'type': 'error', 'content': str(fallback_err)})}\n\n"
+                        yield "data: [DONE]\n\n"
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'content': str(graph_err)})}\n\n"
+                    yield "data: [DONE]\n\n"
 
-        # Try the tool-calling graph first
-        try:
-            result = graph.invoke({"messages": input_messages})
-        except Exception as graph_err:
-            err_str = str(graph_err)
-            if "tool_use_failed" in err_str or "tool_call" in err_str.lower():
-                # Fallback: invoke the LLM without tools
-                fallback_response = llm.invoke(input_messages)
-                result = {"messages": input_messages + [fallback_response]}
-                used_fallback = True
-            else:
-                raise
-
-        for msg in result["messages"]:
-            if isinstance(msg, AIMessage) and msg.tool_calls:
-                for tc in msg.tool_calls:
-                    tool_calls_trace.append({
-                        "type": "tool_call",
-                        "tool_name": tc["name"],
-                        "arguments": tc["args"],
-                    })
-            elif isinstance(msg, ToolMessage):
-                # Attach the result to the most recent tool call
-                if tool_calls_trace:
-                    tool_calls_trace[-1]["result"] = msg.content
-
-        # The final AI message
-        ai_message = result["messages"][-1]
-        reply = ai_message.content
-
-        return {"reply": reply, "tool_calls": tool_calls_trace}
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
 
     except Exception as e:
         return JSONResponse(

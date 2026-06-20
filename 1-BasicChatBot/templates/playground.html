@@ -361,52 +361,80 @@
                     const firstByte = Date.now() - t0;
                     setTtft(firstByte);
 
-                    const data = await res.json();
-                    const totalTime = Date.now() - t0;
-                    setTpot(Math.round(totalTime / Math.max(data.reply?.length || 1, 1) * 100));
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData.error || 'Server error');
+                    }
 
-                    // Mark LLM as success
-                    setNodeStates(prev => ({ ...prev, llm: 'success' }));
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let fullText = '';
+                    let firstChunk = true;
+                    let hasTools = false;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        if (firstChunk) {
+                            setNodeStates(prev => ({ ...prev, llm: 'success' }));
+                            firstChunk = false;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n\n');
+                        buffer = lines.pop(); // keep the last incomplete chunk
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.substring(6).trim();
+                                if (dataStr === '[DONE]') break;
+                                try {
+                                    const data = JSON.parse(dataStr);
+                                    if (data.type === 'message_chunk') {
+                                        fullText += data.content;
+                                        setMessages(prev => prev.map(m =>
+                                            m.id === streamId ? { ...m, text: fullText } : m
+                                        ));
+                                    } else if (data.type === 'tool_call') {
+                                        hasTools = true;
+                                        animateNode('router', 20);
+                                        setNodeStates(prev => ({ ...prev, tool: 'running' }));
+                                        
+                                        setMessages(prev => [
+                                            ...prev.filter(m => m.id !== streamId),
+                                            { type: 'tool', toolName: data.tool_name, args: data.arguments, result: 'Running...', time: getTime() },
+                                            ...prev.filter(m => m.id === streamId)
+                                        ]);
+                                    } else if (data.type === 'tool_result') {
+                                        animateNode('tool', 50);
+                                        setMessages(prev => prev.map(m =>
+                                            m.type === 'tool' && m.toolName === data.tool_name && m.result === 'Running...'
+                                                ? { ...m, result: data.result }
+                                                : m
+                                        ));
+                                    } else if (data.type === 'error') {
+                                        fullText += `\n\n⚠️ Error: ${data.content}`;
+                                        setMessages(prev => prev.map(m =>
+                                            m.id === streamId ? { ...m, text: fullText } : m
+                                        ));
+                                    }
+                                } catch (e) {}
+                            }
+                        }
+                    }
+
+                    if (!hasTools) {
+                        animateNode('router', 10);
+                    }
+
+                    const totalTime = Date.now() - t0;
+                    setTpot(Math.round(totalTime / Math.max(fullText.length || 1, 1) * 100));
                     setDurations(prev => ({ ...prev, llm: totalTime }));
 
-                    // Step 4: If tool calls happened, animate Router + Tool Executor and show ToolBubbles
-                    const toolCalls = data.tool_calls || [];
-                    if (toolCalls.length > 0) {
-                        // Router routed to tools
-                        await animateNode('router', Math.round(Math.random() * 30 + 15));
-
-                        // Tool Executor
-                        setNodeStates(prev => ({ ...prev, tool: 'running' }));
-                        for (const tc of toolCalls) {
-                            await new Promise(r => setTimeout(r, 200));
-                            setMessages(prev => [
-                                ...prev.filter(m => m.id !== streamId),  // temporarily remove streaming AI bubble
-                                { type: 'tool', toolName: tc.tool_name, args: tc.arguments, result: tc.result || 'No result', time: getTime() },
-                                ...prev.filter(m => m.id === streamId),  // re-add streaming bubble after tool
-                            ]);
-                        }
-                        await animateNode('tool', Math.round(Math.random() * 100 + 50));
-                    } else {
-                        // Router went straight to END (no tools needed)
-                        await animateNode('router', Math.round(Math.random() * 20 + 10));
-                    }
-
                     // Step 5: Output node
-                    await animateNode('output', Math.round(Math.random() * 20 + 5));
-
-                    // Step 6: Stream the AI reply text
-                    const fullText = data.reply || 'No response received.';
-                    const words = fullText.split(' ');
-                    let revealed = '';
-
-                    for (let w = 0; w < words.length; w++) {
-                        revealed += (w > 0 ? ' ' : '') + words[w];
-                        const current = revealed;
-                        await new Promise(r => setTimeout(r, 20));
-                        setMessages(prev => prev.map(m =>
-                            m.id === streamId ? { ...m, text: current } : m
-                        ));
-                    }
+                    await animateNode('output', 10);
 
                     // Finalize
                     setMessages(prev => prev.map(m =>
@@ -415,7 +443,7 @@
 
                 } catch (err) {
                     setMessages(prev => prev.map(m =>
-                        m.id === streamId ? { ...m, text: '⚠️ Error connecting to server.', streaming: false, time: getTime() } : m
+                        m.id === streamId ? { ...m, text: `⚠️ Error connecting to server: ${err.message}`, streaming: false, time: getTime() } : m
                     ));
                     setNodeStates(prev => ({ ...prev, llm: 'failed' }));
                 }

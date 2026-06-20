@@ -1187,6 +1187,34 @@
             if (on) scrollToBottom();
         }
 
+        function addStreamingMessage(sender) {
+            if (welcomeBlock) welcomeBlock.style.display = 'none';
+
+            const row = document.createElement('div');
+            row.className = `message-row ${sender}`;
+
+            const avatarSvg = sender === 'ai'
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+            const sourceHtml = sender === 'ai'
+                ? `<div class="msg-source">LangGraph <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>`
+                : '';
+
+            row.innerHTML = `
+                <div class="msg-avatar ${sender}">${avatarSvg}</div>
+                <div class="msg-content">
+                    <div class="msg-bubble"></div>
+                    ${sourceHtml}
+                    <div class="msg-time">${getTime()}</div>
+                </div>
+            `;
+
+            chatMessages.appendChild(row);
+            scrollToBottom();
+            return { row, bubble: row.querySelector('.msg-bubble') };
+        }
+
         async function sendMessage() {
             const text = messageInput.value.trim();
             if (!text) return;
@@ -1196,6 +1224,8 @@
             setLoading(true);
 
             const t0 = Date.now();
+            const { bubble } = addStreamingMessage('ai');
+            let fullText = '';
 
             try {
                 const res = await fetch('/chat', {
@@ -1203,20 +1233,54 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: text }),
                 });
-                const data = await res.json();
-                const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
-                if (res.ok) {
-                    addMessage(data.reply, 'ai');
-                    totalMessages++;
-                    totalTime += parseFloat(elapsed);
-                    msgCountEl.textContent = totalMessages;
-                    avgTimeEl.textContent = (totalTime / totalMessages).toFixed(1) + 's';
-                } else {
-                    addMessage(`⚠️ ${data.error || 'Something went wrong.'}`, 'ai');
+                if (!res.ok) {
+                    const data = await res.json();
+                    bubble.innerHTML = `<p>⚠️ ${data.error || 'Something went wrong.'}</p>`;
+                    return;
                 }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop(); // keep the last incomplete chunk
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.substring(6).trim();
+                            if (dataStr === '[DONE]') break;
+                            try {
+                                const data = JSON.parse(dataStr);
+                                if (data.type === 'message_chunk') {
+                                    fullText += data.content;
+                                    bubble.innerHTML = formatMd(fullText);
+                                    scrollToBottom();
+                                } else if (data.type === 'error') {
+                                    fullText += `\n\n⚠️ Error: ${data.content}`;
+                                    bubble.innerHTML = formatMd(fullText);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE json', e, dataStr);
+                            }
+                        }
+                    }
+                }
+
+                const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+                totalMessages++;
+                totalTime += parseFloat(elapsed);
+                msgCountEl.textContent = totalMessages;
+                avgTimeEl.textContent = (totalTime / totalMessages).toFixed(1) + 's';
+
             } catch (err) {
-                addMessage('⚠️ Could not connect to the server. Is the backend running?', 'ai');
+                bubble.innerHTML = '<p>⚠️ Could not connect to the server. Is the backend running?</p>';
             } finally {
                 setLoading(false);
                 messageInput.focus();
