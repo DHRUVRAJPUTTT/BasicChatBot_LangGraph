@@ -1447,6 +1447,166 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ── Help & About Me Overlay Modals ──────────── */
+        .overlay-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.25s ease;
+        }
+        .overlay-modal.active {
+            display: flex;
+        }
+        .overlay-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 560px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 36px 32px;
+            position: relative;
+            animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .overlay-close {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all var(--transition);
+            font-size: 16px;
+        }
+        .overlay-close:hover {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+        .overlay-card h2 {
+            font-size: 22px;
+            margin-bottom: 6px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .overlay-card .overlay-subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+        .overlay-card h4 {
+            font-size: 14px;
+            color: var(--text-primary);
+            margin: 20px 0 10px;
+            letter-spacing: 0.5px;
+        }
+        .overlay-card p, .overlay-card li {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .overlay-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .overlay-card ul li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .overlay-card ul li:last-child { border-bottom: none; }
+        .help-kbd {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-family: 'SF Mono', monospace;
+            color: var(--text-primary);
+            min-width: 60px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .about-profile {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+        }
+        .about-avatar {
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .about-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .about-role {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .about-contact-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px 20px;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all var(--transition);
+        }
+        .about-contact-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+        .about-tech-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .about-tech-tag {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -1500,7 +1660,7 @@
                 </button>
             </nav>
             <div class="sidebar-footer">
-                <button class="footer-link">
+                <button class="footer-link" id="btnHelp" onclick="openOverlay('helpOverlay')">
                     <svg class="footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10" />
@@ -1509,13 +1669,13 @@
                     </svg>
                     Help
                 </button>
-                <button class="footer-link">
+                <button class="footer-link" id="btnAbout" onclick="openOverlay('aboutOverlay')">
                     <svg class="footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                     </svg>
-                    Privacy
+                    About Me
                 </button>
             </div>
         </aside>
@@ -1833,6 +1993,82 @@
                 <p class="model-detail">Model: GPT-OSS 120B<br>Provider: OpenRouter<br>Framework: LangGraph</p>
             </div>
         </aside>
+    </div>
+
+    <!-- ── Help Overlay ────────────────────────────────── -->
+    <div class="overlay-modal" id="helpOverlay" onclick="closeOverlayOnBg(event)">
+        <div class="overlay-card">
+            <button class="overlay-close" onclick="closeOverlay('helpOverlay')">&times;</button>
+            <h2>&#x2753; Help Center</h2>
+            <p class="overlay-subtitle">Everything you need to know to use LangGraph AI</p>
+
+            <h4>&#x2328;&#xFE0F; Keyboard Shortcuts</h4>
+            <ul>
+                <li><span class="help-kbd">Enter</span> Send your message</li>
+                <li><span class="help-kbd">Shift+Enter</span> New line in the input</li>
+                <li><span class="help-kbd">Esc</span> Close this dialog</li>
+            </ul>
+
+            <h4>&#x1F4AC; How to Use</h4>
+            <ul>
+                <li>&#x1F4DD; Type any question in the chat box and press Enter</li>
+                <li>&#x1F525; Visit <strong>Trending</strong> to explore popular AI topics</li>
+                <li>&#x1F516; <strong>Save</strong> any response by hovering and clicking the bookmark icon</li>
+                <li>&#x1F310; Check <strong>Sources</strong> to see the tech stack behind this app</li>
+                <li>&#x1F6E0;&#xFE0F; Visit <strong>/playground</strong> to see the Developer Playground with graph visualization</li>
+            </ul>
+
+            <h4>&#x2753; Frequently Asked Questions</h4>
+            <ul>
+                <li><strong>Q: Is my data stored?</strong> &mdash; No. Conversations are not saved on any server. Saved messages use your browser's local storage only.</li>
+                <li><strong>Q: Which AI model is used?</strong> &mdash; GPT-OSS 120B via OpenRouter API, orchestrated through LangGraph.</li>
+                <li><strong>Q: Can it search the web?</strong> &mdash; Yes! It uses Tavily Search for real-time web results.</li>
+                <li><strong>Q: Is there a message limit?</strong> &mdash; No hard limit, but the free model tier may have rate limits.</li>
+            </ul>
+
+            <h4>&#x1F6A8; Having Issues?</h4>
+            <p>If the bot is not responding, check that the backend server is running. For bugs or feature requests, reach out via the About Me section.</p>
+        </div>
+    </div>
+
+    <!-- ── About Me Overlay ────────────────────────────── -->
+    <div class="overlay-modal" id="aboutOverlay" onclick="closeOverlayOnBg(event)">
+        <div class="overlay-card">
+            <button class="overlay-close" onclick="closeOverlay('aboutOverlay')">&times;</button>
+            <h2>&#x1F44B; About Me</h2>
+            <p class="overlay-subtitle">The developer behind this project</p>
+
+            <div class="about-profile">
+                <div class="about-avatar">DR</div>
+                <div>
+                    <div class="about-name">Dhruv Rajput</div>
+                    <div class="about-role">AI / ML Enthusiast &bull; Agentic AI Learner</div>
+                </div>
+            </div>
+
+            <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
+                This is a <strong style="color: var(--text-primary);">Basic LLM-Powered AI Chatbot</strong> made by 
+                <strong style="color: var(--text-primary);">Dhruv Rajput</strong> during the learning of 
+                <strong style="color: var(--text-primary);">Agentic AI</strong>. It demonstrates how to build 
+                intelligent conversational agents using LangGraph, tool-calling, and real-time streaming.
+            </p>
+
+            <h4>&#x1F527; Tech Stack Used</h4>
+            <div class="about-tech-grid">
+                <div class="about-tech-tag">&#x1F9E0; LangGraph</div>
+                <div class="about-tech-tag">&#x1F916; OpenRouter API</div>
+                <div class="about-tech-tag">&#x26A1; FastAPI</div>
+                <div class="about-tech-tag">&#x1F310; Tavily Search</div>
+                <div class="about-tech-tag">&#x1F40D; Python 3.11</div>
+                <div class="about-tech-tag">&#x1F917; Hugging Face Spaces</div>
+            </div>
+
+            <h4>&#x1F4EC; Get in Touch</h4>
+            <p>For any queries, collaborations, or work opportunities:</p>
+            <a href="mailto:dhruvrajput3177@gmail.com" class="about-contact-link">
+                &#x2709;&#xFE0F; dhruvrajput3177@gmail.com
+            </a>
+        </div>
     </div>
 
     <script>
@@ -2184,6 +2420,24 @@
                 messageInput.focus();
             }
         }
+
+        // ── Overlay Modals ────────────────────────────────────
+        function openOverlay(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeOverlay(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        function closeOverlayOnBg(e) {
+            if (e.target === e.currentTarget) {
+                e.target.classList.remove('active');
+            }
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.overlay-modal.active').forEach(m => m.classList.remove('active'));
+            }
+        });
 
         // ── Initialize ──────────────────────────────────────
         updateSavedCounter();
