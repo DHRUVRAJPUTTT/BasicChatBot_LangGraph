@@ -1,0 +1,106 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── CI: Lint, validate, and test ──────────────────────
+  ci:
+    name: 🔄 Build & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "1-BasicChatBot/requirements.txt"
+
+      - name: 📦 Install dependencies
+        run: |
+          cd 1-BasicChatBot
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: 🔍 Lint with flake8
+        run: |
+          cd 1-BasicChatBot
+          flake8 app.py --max-line-length=120 --ignore=E501,W503,E402
+
+      - name: ✅ Validate app imports
+        run: |
+          cd 1-BasicChatBot
+          python -c "
+          import sys
+          try:
+              # Test that the app module loads without crashing
+              from app import app
+              print('✅ FastAPI app imported successfully')
+              print(f'   App title: {app.title}')
+              print(f'   App version: {app.version}')
+          except Exception as e:
+              print(f'❌ Import failed: {e}')
+              sys.exit(1)
+          "
+
+      - name: 🐳 Validate Dockerfile
+        run: |
+          cd 1-BasicChatBot
+          if [ -f Dockerfile ]; then
+            echo "✅ Dockerfile found"
+            # Check for required instructions
+            grep -q "FROM" Dockerfile && echo "   ✓ FROM instruction present"
+            grep -q "EXPOSE" Dockerfile && echo "   ✓ EXPOSE instruction present"
+            grep -q "CMD" Dockerfile && echo "   ✓ CMD instruction present"
+          else
+            echo "❌ Dockerfile not found"
+            exit 1
+          fi
+
+      - name: 📄 Validate HTML templates
+        run: |
+          cd 1-BasicChatBot/templates
+          for file in *.html; do
+            if [ -f "$file" ]; then
+              # Basic check: file is non-empty and has html tags
+              if grep -q "<html" "$file" && grep -q "</html>" "$file"; then
+                echo "✅ $file — valid HTML structure"
+              else
+                echo "❌ $file — missing <html> tags"
+                exit 1
+              fi
+            fi
+          done
+
+  # ── CD: Deploy to Hugging Face Spaces ─────────────────
+  deploy:
+    name: 🚀 Deploy to HF Spaces
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: 🤗 Push to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd 1-BasicChatBot/AI-ChatBot-by-Dhruv
+          git config user.email "ci@github-actions.com"
+          git config user.name "GitHub Actions CI/CD"
+          git remote set-url origin https://Dhruv2007:${HF_TOKEN}@huggingface.co/spaces/Dhruv2007/AI-ChatBot-by-Dhruv
+          git push origin main --force
+          echo "✅ Successfully deployed to https://huggingface.co/spaces/Dhruv2007/AI-ChatBot-by-Dhruv"
