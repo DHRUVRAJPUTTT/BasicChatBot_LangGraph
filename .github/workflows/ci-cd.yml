@@ -36,6 +36,9 @@ jobs:
           flake8 app.py --max-line-length=120 --ignore=E501,W503,E402 --exit-zero
 
       - name: ✅ Validate app imports
+        env:
+          OPENAI_API_KEY: "dummy-openai-key"
+          TAVILY_API_KEY: "dummy-tavily-key"
         run: |
           cd 1-BasicChatBot
           python -c "
