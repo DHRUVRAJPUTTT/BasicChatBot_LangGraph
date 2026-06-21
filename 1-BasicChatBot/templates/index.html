@@ -870,6 +870,549 @@
             margin-top: 4px;
         }
 
+        /* ── Content Panels (Trending/Saved/Sources) ──────────── */
+        .content-panel {
+            display: none;
+            flex-direction: column;
+            background: rgba(15, 14, 23, 0.5);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border);
+            position: relative;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .content-panel.active {
+            display: flex;
+        }
+
+        .content-panel::-webkit-scrollbar { width: 6px; }
+        .content-panel::-webkit-scrollbar-track { background: transparent; }
+        .content-panel::-webkit-scrollbar-thumb {
+            background: rgba(124, 58, 237, 0.3);
+            border-radius: 10px;
+        }
+
+        .panel-title-bar {
+            padding: 24px 32px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: rgba(18, 17, 38, 0.6);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title-bar h2 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .panel-title-bar p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .panel-body {
+            flex: 1;
+            padding: 24px 28px;
+            overflow-y: auto;
+        }
+
+        /* ── Trending Panel ─────────────────────────────────────── */
+        .trending-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .trend-card {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            cursor: pointer;
+            transition: all var(--transition);
+            overflow: hidden;
+        }
+
+        .trend-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .trend-card:nth-child(1)::before { background: var(--gradient-primary); }
+        .trend-card:nth-child(2)::before { background: var(--gradient-secondary); }
+        .trend-card:nth-child(3)::before { background: var(--gradient-warm); }
+        .trend-card:nth-child(4)::before { background: linear-gradient(135deg, #34d399, #06b6d4); }
+        .trend-card:nth-child(5)::before { background: linear-gradient(135deg, #f43f5e, #f59e0b); }
+        .trend-card:nth-child(6)::before { background: linear-gradient(135deg, #8b5cf6, #06b6d4); }
+
+        .trend-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .trend-card .trend-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 14px;
+        }
+
+        .trend-card:nth-child(1) .trend-icon { background: rgba(124, 58, 237, 0.15); }
+        .trend-card:nth-child(2) .trend-icon { background: rgba(6, 182, 212, 0.15); }
+        .trend-card:nth-child(3) .trend-icon { background: rgba(245, 158, 11, 0.15); }
+        .trend-card:nth-child(4) .trend-icon { background: rgba(52, 211, 153, 0.15); }
+        .trend-card:nth-child(5) .trend-icon { background: rgba(244, 63, 94, 0.15); }
+        .trend-card:nth-child(6) .trend-icon { background: rgba(139, 92, 246, 0.15); }
+
+        .trend-card h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .trend-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .trend-card .trend-stats {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 14px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .trend-card .trend-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend-card .trend-stats .hot {
+            color: #f43f5e;
+            font-weight: 600;
+        }
+
+        .trending-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .trending-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .trending-prompts {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .trending-prompt-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .trending-prompt-item:hover {
+            border-color: rgba(124, 58, 237, 0.3);
+            background: rgba(124, 58, 237, 0.08);
+            transform: translateX(4px);
+        }
+
+        .trending-prompt-item .rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .trending-prompt-item .prompt-text {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .trending-prompt-item .prompt-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* ── Saved Panel ────────────────────────────────────────── */
+        .saved-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .saved-empty-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: var(--radius-lg);
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+
+        .saved-empty h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .saved-empty p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            max-width: 320px;
+        }
+
+        .saved-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .saved-item {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            animation: msgIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+            transition: all var(--transition);
+        }
+
+        .saved-item:hover {
+            border-color: rgba(124, 58, 237, 0.25);
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.1);
+        }
+
+        .saved-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .saved-item-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+        }
+
+        .saved-item-type.ai-type {
+            background: rgba(124, 58, 237, 0.12);
+            color: #a78bfa;
+        }
+
+        .saved-item-type.user-type {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+        }
+
+        .saved-item-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .saved-item-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .saved-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .saved-action-btn {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .saved-action-btn:hover {
+            border-color: var(--accent-1);
+            color: var(--accent-1);
+            background: rgba(124, 58, 237, 0.08);
+        }
+
+        .saved-action-btn.delete:hover {
+            border-color: #f43f5e;
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.08);
+        }
+
+        .save-msg-btn {
+            opacity: 0;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(18, 17, 38, 0.9);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            z-index: 5;
+        }
+
+        .message-row:hover .save-msg-btn {
+            opacity: 1;
+        }
+
+        .save-msg-btn:hover {
+            color: #fbbf24;
+            border-color: #fbbf24;
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        .save-msg-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* ── Sources Panel ──────────────────────────────────────── */
+        .sources-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .source-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .source-card:hover {
+            border-color: rgba(124, 58, 237, 0.3);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .source-card .source-status {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34d399;
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .source-card .source-status.offline {
+            background: #6b7280;
+            box-shadow: none;
+            animation: none;
+        }
+
+        .source-card .source-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+
+        .source-card h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .source-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .source-card .source-tag {
+            display: inline-flex;
+            margin-top: 14px;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .source-card:nth-child(1) .source-icon { background: rgba(124, 58, 237, 0.15); }
+        .source-card:nth-child(2) .source-icon { background: rgba(6, 182, 212, 0.15); }
+        .source-card:nth-child(3) .source-icon { background: rgba(245, 158, 11, 0.15); }
+        .source-card:nth-child(4) .source-icon { background: rgba(52, 211, 153, 0.15); }
+        .source-card:nth-child(5) .source-icon { background: rgba(236, 72, 153, 0.15); }
+        .source-card:nth-child(6) .source-icon { background: rgba(244, 63, 94, 0.15); }
+
+        .source-card:nth-child(1) .source-tag { background: rgba(124, 58, 237, 0.12); color: #a78bfa; }
+        .source-card:nth-child(2) .source-tag { background: rgba(6, 182, 212, 0.12); color: #22d3ee; }
+        .source-card:nth-child(3) .source-tag { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+        .source-card:nth-child(4) .source-tag { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+        .source-card:nth-child(5) .source-tag { background: rgba(236, 72, 153, 0.12); color: #f472b6; }
+        .source-card:nth-child(6) .source-tag { background: rgba(244, 63, 94, 0.12); color: #fb7185; }
+
+        .arch-section {
+            margin-top: 8px;
+        }
+
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 24px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow-x: auto;
+        }
+
+        .arch-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 16px;
+            background: rgba(124, 58, 237, 0.08);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            border-radius: var(--radius-md);
+            min-width: 90px;
+            transition: all var(--transition);
+        }
+
+        .arch-node:hover {
+            background: rgba(124, 58, 237, 0.15);
+            border-color: rgba(124, 58, 237, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .arch-node .node-emoji {
+            font-size: 20px;
+        }
+
+        .arch-node .node-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .arch-arrow {
+            color: var(--text-muted);
+            font-size: 18px;
+            padding: 0 6px;
+            flex-shrink: 0;
+        }
+
+        .saved-counter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            background: var(--gradient-primary);
+            font-size: 10px;
+            font-weight: 700;
+            color: white;
+            padding: 0 5px;
+            margin-left: 6px;
+        }
+
         /* ── Responsive ────────────────────────────────────────── */
         @media (max-width: 1100px) {
             .app-layout {
@@ -897,6 +1440,11 @@
 
             .msg-content {
                 max-width: 85%;
+            }
+
+            .trending-grid,
+            .sources-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -938,7 +1486,7 @@
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                     </svg>
-                    <span>Saved</span>
+                    <span>Saved</span><span class="saved-counter" id="savedCounter" style="display:none;">0</span>
                 </button>
                 <button class="nav-item" id="navSources">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1038,6 +1586,208 @@
             </div>
         </main>
 
+        <!-- ── Trending Panel ────────────────────────────── -->
+        <section class="content-panel" id="trendingPanel">
+            <div class="panel-title-bar">
+                <h2 style="background: var(--gradient-warm); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🔥 Trending Now</h2>
+                <p>Popular topics and prompts across the AI community</p>
+            </div>
+            <div class="panel-body">
+                <div class="trending-section-title">Hot Topics</div>
+                <div class="trending-grid">
+                    <div class="trend-card" onclick="useTrendingTopic('Explain how multi-agent systems work in LangGraph')">
+                        <div class="trend-icon">🤖</div>
+                        <h4>Multi-Agent Systems</h4>
+                        <p>Building collaborative AI agents with LangGraph orchestration</p>
+                        <div class="trend-stats">
+                            <span class="hot">🔥 2.4k asks</span>
+                            <span>📈 +180%</span>
+                        </div>
+                    </div>
+                    <div class="trend-card" onclick="useTrendingTopic('What is RAG and how does it improve LLM responses?')">
+                        <div class="trend-icon">📚</div>
+                        <h4>RAG Pipelines</h4>
+                        <p>Retrieval-Augmented Generation for grounded, accurate answers</p>
+                        <div class="trend-stats">
+                            <span class="hot">🔥 1.8k asks</span>
+                            <span>📈 +145%</span>
+                        </div>
+                    </div>
+                    <div class="trend-card" onclick="useTrendingTopic('How do AI agents use tool calling to interact with external APIs?')">
+                        <div class="trend-icon">🔧</div>
+                        <h4>Tool Calling</h4>
+                        <p>How LLMs invoke functions and APIs to perform real-world actions</p>
+                        <div class="trend-stats">
+                            <span class="hot">🔥 1.5k asks</span>
+                            <span>📈 +120%</span>
+                        </div>
+                    </div>
+                    <div class="trend-card" onclick="useTrendingTopic('Compare GPT-4, Claude, Gemini and open-source LLMs')">
+                        <div class="trend-icon">⚖️</div>
+                        <h4>LLM Comparison</h4>
+                        <p>Benchmarking GPT-4, Claude, Gemini, and open-source models</p>
+                        <div class="trend-stats">
+                            <span class="hot">🔥 1.2k asks</span>
+                            <span>📈 +95%</span>
+                        </div>
+                    </div>
+                    <div class="trend-card" onclick="useTrendingTopic('Explain prompt engineering best practices with examples')">
+                        <div class="trend-icon">✨</div>
+                        <h4>Prompt Engineering</h4>
+                        <p>Crafting effective prompts for better AI outputs and reasoning</p>
+                        <div class="trend-stats">
+                            <span class="hot">🔥 980 asks</span>
+                            <span>📈 +88%</span>
+                        </div>
+                    </div>
+                    <div class="trend-card" onclick="useTrendingTopic('What is the difference between fine-tuning and in-context learning?')">
+                        <div class="trend-icon">🧬</div>
+                        <h4>Fine-Tuning vs ICL</h4>
+                        <p>When to fine-tune models versus using in-context learning</p>
+                        <div class="trend-stats">
+                            <span class="hot">🔥 870 asks</span>
+                            <span>📈 +76%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trending-section-title" style="margin-top: 10px;">Popular Prompts</div>
+                <div class="trending-prompts">
+                    <div class="trending-prompt-item" onclick="useTrendingTopic('Explain the transformer architecture in simple terms')">
+                        <div class="rank">1</div>
+                        <span class="prompt-text">Explain the transformer architecture in simple terms</span>
+                        <span class="prompt-count">3.2k uses</span>
+                    </div>
+                    <div class="trending-prompt-item" onclick="useTrendingTopic('Write a Python function to implement binary search')">
+                        <div class="rank">2</div>
+                        <span class="prompt-text">Write a Python function to implement binary search</span>
+                        <span class="prompt-count">2.8k uses</span>
+                    </div>
+                    <div class="trending-prompt-item" onclick="useTrendingTopic('What are the key differences between GenAI and AgenticAI?')">
+                        <div class="rank">3</div>
+                        <span class="prompt-text">What are the key differences between GenAI and AgenticAI?</span>
+                        <span class="prompt-count">2.1k uses</span>
+                    </div>
+                    <div class="trending-prompt-item" onclick="useTrendingTopic('How does LangGraph manage state in conversational AI?')">
+                        <div class="rank">4</div>
+                        <span class="prompt-text">How does LangGraph manage state in conversational AI?</span>
+                        <span class="prompt-count">1.7k uses</span>
+                    </div>
+                    <div class="trending-prompt-item" onclick="useTrendingTopic('Build a REST API with FastAPI and explain the code')">
+                        <div class="rank">5</div>
+                        <span class="prompt-text">Build a REST API with FastAPI and explain the code</span>
+                        <span class="prompt-count">1.4k uses</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Saved Panel ───────────────────────────────── -->
+        <section class="content-panel" id="savedPanel">
+            <div class="panel-title-bar">
+                <h2 style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🔖 Saved Messages</h2>
+                <p>Your bookmarked conversations and responses</p>
+            </div>
+            <div class="panel-body">
+                <div class="saved-list" id="savedList">
+                    <!-- Saved items render here -->
+                </div>
+                <div class="saved-empty" id="savedEmpty">
+                    <div class="saved-empty-icon">🔖</div>
+                    <h4>No Saved Messages Yet</h4>
+                    <p>Hover over any chat message and click the bookmark icon to save it here for quick reference.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Sources Panel ─────────────────────────────── -->
+        <section class="content-panel" id="sourcesPanel">
+            <div class="panel-title-bar">
+                <h2 style="background: var(--gradient-secondary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🌐 Sources & Stack</h2>
+                <p>The technologies and services powering this AI chatbot</p>
+            </div>
+            <div class="panel-body">
+                <div class="trending-section-title">Core Technologies</div>
+                <div class="sources-grid">
+                    <div class="source-card">
+                        <div class="source-status"></div>
+                        <div class="source-icon">🧠</div>
+                        <h4>LangGraph</h4>
+                        <p>Stateful, multi-actor orchestration framework for building agent workflows with cycles and branching.</p>
+                        <span class="source-tag">Framework</span>
+                    </div>
+                    <div class="source-card">
+                        <div class="source-status"></div>
+                        <div class="source-icon">🔗</div>
+                        <h4>OpenRouter API</h4>
+                        <p>Unified gateway for accessing 200+ LLMs from OpenAI, Anthropic, Google, Meta and more.</p>
+                        <span class="source-tag">API Gateway</span>
+                    </div>
+                    <div class="source-card">
+                        <div class="source-icon">⚡</div>
+                        <div class="source-status"></div>
+                        <h4>GPT-OSS 120B</h4>
+                        <p>Large-scale open-source model with 120B parameters for high-quality conversational AI.</p>
+                        <span class="source-tag">LLM Model</span>
+                    </div>
+                    <div class="source-card">
+                        <div class="source-status"></div>
+                        <div class="source-icon">🐍</div>
+                        <h4>Flask Backend</h4>
+                        <p>Lightweight WSGI web framework serving the chat API with SSE streaming support.</p>
+                        <span class="source-tag">Backend</span>
+                    </div>
+                    <div class="source-card">
+                        <div class="source-icon">🛠️</div>
+                        <div class="source-status"></div>
+                        <h4>Tool Ecosystem</h4>
+                        <p>Built-in tools for time, calculation, and knowledge search bound to the LLM via LangGraph.</p>
+                        <span class="source-tag">Tools</span>
+                    </div>
+                    <div class="source-card">
+                        <div class="source-icon">🔒</div>
+                        <div class="source-status offline"></div>
+                        <h4>LangSmith</h4>
+                        <p>Tracing and observability platform for debugging LLM chains (optional integration).</p>
+                        <span class="source-tag">Observability</span>
+                    </div>
+                </div>
+
+                <div class="trending-section-title arch-section">Architecture Flow</div>
+                <div class="arch-flow">
+                    <div class="arch-node">
+                        <span class="node-emoji">👤</span>
+                        <span class="node-label">User Input</span>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-node">
+                        <span class="node-emoji">🐍</span>
+                        <span class="node-label">Flask API</span>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-node">
+                        <span class="node-emoji">🧠</span>
+                        <span class="node-label">LangGraph</span>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-node">
+                        <span class="node-emoji">🔗</span>
+                        <span class="node-label">OpenRouter</span>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-node">
+                        <span class="node-emoji">⚡</span>
+                        <span class="node-label">LLM</span>
+                    </div>
+                    <span class="arch-arrow">→</span>
+                    <div class="arch-node">
+                        <span class="node-emoji">💬</span>
+                        <span class="node-label">SSE Stream</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ── Right Panel ───────────────────────────────── -->
         <aside class="right-panel">
             <div class="panel-header">
@@ -1099,6 +1849,138 @@
         let totalMessages = 0;
         let totalTime = 0;
 
+        // ── Saved Messages Store ─────────────────────────────
+        let savedMessages = JSON.parse(localStorage.getItem('savedMessages') || '[]');
+
+        function persistSaved() {
+            localStorage.setItem('savedMessages', JSON.stringify(savedMessages));
+            updateSavedCounter();
+        }
+
+        function updateSavedCounter() {
+            const counter = document.getElementById('savedCounter');
+            if (counter) {
+                counter.textContent = savedMessages.length;
+                counter.style.display = savedMessages.length > 0 ? 'inline-flex' : 'none';
+            }
+        }
+
+        function saveMessage(text, sender) {
+            const msg = {
+                id: Date.now(),
+                text: text.substring(0, 500),
+                sender,
+                time: getTime(),
+                date: new Date().toLocaleDateString()
+            };
+            savedMessages.unshift(msg);
+            persistSaved();
+            renderSavedList();
+        }
+
+        function removeSavedMessage(id) {
+            savedMessages = savedMessages.filter(m => m.id !== id);
+            persistSaved();
+            renderSavedList();
+        }
+
+        function copySavedMessage(text) {
+            navigator.clipboard.writeText(text).catch(() => {});
+        }
+
+        function renderSavedList() {
+            const list = document.getElementById('savedList');
+            const empty = document.getElementById('savedEmpty');
+            if (!list || !empty) return;
+
+            if (savedMessages.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'flex';
+                return;
+            }
+
+            empty.style.display = 'none';
+            list.innerHTML = savedMessages.map(msg => `
+                <div class="saved-item" data-id="${msg.id}">
+                    <div class="saved-item-header">
+                        <span class="saved-item-type ${msg.sender === 'ai' ? 'ai-type' : 'user-type'}">
+                            ${msg.sender === 'ai' ? '🤖 AI Response' : '👤 Your Message'}
+                        </span>
+                        <span class="saved-item-time">${msg.date} · ${msg.time}</span>
+                    </div>
+                    <div class="saved-item-text">${msg.text}</div>
+                    <div class="saved-item-actions">
+                        <button class="saved-action-btn" onclick="copySavedMessage(${JSON.stringify(msg.text).replace(/'/g, "\\'")})">
+                            📋 Copy
+                        </button>
+                        <button class="saved-action-btn" onclick="useSavedAsPrompt(${JSON.stringify(msg.text).replace(/'/g, "\\'")})">
+                            💬 Use as Prompt
+                        </button>
+                        <button class="saved-action-btn delete" onclick="removeSavedMessage(${msg.id})">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSavedAsPrompt(text) {
+            switchToTab('navChat');
+            messageInput.value = text;
+            messageInput.focus();
+        }
+
+        // ── Navigation / Tab Switching ───────────────────────
+        const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+        const chatMain = document.querySelector('.chat-main');
+        const trendingPanel = document.getElementById('trendingPanel');
+        const savedPanel = document.getElementById('savedPanel');
+        const sourcesPanel = document.getElementById('sourcesPanel');
+
+        const panelMap = {
+            navChat: chatMain,
+            navTrending: trendingPanel,
+            navSaved: savedPanel,
+            navSources: sourcesPanel,
+        };
+
+        function switchToTab(tabId) {
+            // Hide all
+            chatMain.style.display = 'none';
+            trendingPanel.classList.remove('active');
+            savedPanel.classList.remove('active');
+            sourcesPanel.classList.remove('active');
+
+            // Remove active from all nav items
+            navItems.forEach(n => n.classList.remove('active'));
+
+            // Show selected
+            const btn = document.getElementById(tabId);
+            if (btn) btn.classList.add('active');
+
+            if (tabId === 'navChat') {
+                chatMain.style.display = 'flex';
+            } else if (tabId === 'navTrending') {
+                trendingPanel.classList.add('active');
+            } else if (tabId === 'navSaved') {
+                savedPanel.classList.add('active');
+                renderSavedList();
+            } else if (tabId === 'navSources') {
+                sourcesPanel.classList.add('active');
+            }
+        }
+
+        navItems.forEach(btn => {
+            btn.addEventListener('click', () => switchToTab(btn.id));
+        });
+
+        // ── Trending topic click handler ─────────────────────
+        function useTrendingTopic(text) {
+            switchToTab('navChat');
+            messageInput.value = text;
+            messageInput.focus();
+        }
+
         // Set feed times
         function setFeedTimes() {
             const now = new Date();
@@ -1157,6 +2039,7 @@
 
             const row = document.createElement('div');
             row.className = `message-row ${sender}`;
+            row.style.position = 'relative';
 
             const avatarSvg = sender === 'ai'
                 ? '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
@@ -1167,7 +2050,10 @@
                 ? `<div class="msg-source">LangGraph <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>`
                 : '';
 
+            const saveBtn = `<button class="save-msg-btn" onclick="saveMessage(${JSON.stringify(text).replace(/"/g, '&quot;')}, '${sender}')" title="Save message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>`;
+
             row.innerHTML = `
+                ${saveBtn}
                 <div class="msg-avatar ${sender}">${avatarSvg}</div>
                 <div class="msg-content">
                     <div class="msg-bubble">${formatted}</div>
@@ -1192,6 +2078,7 @@
 
             const row = document.createElement('div');
             row.className = `message-row ${sender}`;
+            row.style.position = 'relative';
 
             const avatarSvg = sender === 'ai'
                 ? '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
@@ -1224,7 +2111,7 @@
             setLoading(true);
 
             const t0 = Date.now();
-            const { bubble } = addStreamingMessage('ai');
+            const { row: aiRow, bubble } = addStreamingMessage('ai');
             let fullText = '';
 
             try {
@@ -1273,6 +2160,17 @@
                     }
                 }
 
+                // Add save button to streaming AI message after complete
+                if (fullText) {
+                    const saveBtn = document.createElement('button');
+                    saveBtn.className = 'save-msg-btn';
+                    saveBtn.title = 'Save message';
+                    saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+                    const capturedText = fullText;
+                    saveBtn.addEventListener('click', () => saveMessage(capturedText, 'ai'));
+                    aiRow.insertBefore(saveBtn, aiRow.firstChild);
+                }
+
                 const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
                 totalMessages++;
                 totalTime += parseFloat(elapsed);
@@ -1286,6 +2184,10 @@
                 messageInput.focus();
             }
         }
+
+        // ── Initialize ──────────────────────────────────────
+        updateSavedCounter();
+        renderSavedList();
     </script>
 </body>
 
