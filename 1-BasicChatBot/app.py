@@ -89,7 +89,7 @@ SYSTEM_PROMPT = (
 )
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+    model="gemini-3.6-flash",
 )
 llm_with_tools = llm.bind_tools(tools)
 
