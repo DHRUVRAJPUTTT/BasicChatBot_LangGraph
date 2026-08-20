@@ -37,7 +37,7 @@ jobs:
 
       - name: ✅ Validate app imports
         env:
-          OPENAI_API_KEY: "dummy-openai-key"
+          GOOGLE_API_KEY: "dummy-google-key"
           TAVILY_API_KEY: "dummy-tavily-key"
         run: |
           cd 1-BasicChatBot
