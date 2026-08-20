@@ -98,9 +98,9 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 
-def chatbot(state: State):
+async def chatbot(state: State):
     """Node function: invokes the LLM (with tools) on current messages."""
-    return {"messages": [llm_with_tools.invoke(state["messages"])]}
+    return {"messages": [await llm_with_tools.ainvoke(state["messages"])]}
 
 
 # Build the graph with tool-calling loop
